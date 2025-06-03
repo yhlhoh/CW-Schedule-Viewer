@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>课程表时间线可视化</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #4361ee;
+            --secondary-color: #3f37c9;
+            --accent-color: #4cc9f0;
+            --light-color: #f8f9fa;
+            --dark-color: #212529;
+            --success-color: #4ade80;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --border-radius: 12px;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%);
+            color: var(--dark-color);
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--secondary-color);
+            font-weight: 700;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: #64748b;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-title {
+            font-size: 1.4rem;
+            margin-bottom: 1rem;
+            color: var(--secondary-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .upload-area {
+            border: 2px dashed #cbd5e1;
+            border-radius: var(--border-radius);
+            padding: 3rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            background: #f8fafc;
+        }
+
+        .upload-area:hover {
+            border-color: var(--primary-color);
+            background: #f0f7ff;
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .upload-text {
+            margin-bottom: 1rem;
+            color: #64748b;
+        }
+
+        .btn {
+            display: inline-block;
+            background: var(--primary-color);
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border-radius: 50px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 1rem;
+        }
+
+        .btn:hover {
+            background: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .btn-outline:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .days-selector {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+            margin-bottom: 1.5rem;
+        }
+
+        .day-btn {
+            flex: 1;
+            min-width: 120px;
+            padding: 0.8rem;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: var(--border-radius);
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            font-weight: 600;
+            color: #64748b;
+        }
+
+        .day-btn.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .day-btn:hover:not(.active) {
+            background: #f1f5f9;
+        }
+
+        .timeline {
+            position: relative;
+            padding: 2rem 0;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 50px;
+            width: 4px;
+            background: #e2e8f0;
+            border-radius: 2px;
+        }
+
+        .timeline-item {
+            display: flex;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .timeline-time {
+            width: 90px;
+            padding-right: 20px;
+            text-align: right;
+            font-weight: 600;
+            color: var(--secondary-color);
+        }
+
+        .timeline-content {
+            flex: 1;
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 1.2rem;
+            box-shadow: var(--shadow);
+            position: relative;
+            border-left: 4px solid var(--primary-color);
+            transition: var(--transition);
+        }
+
+        .timeline-content:hover {
+            transform: translateX(5px);
+        }
+
+        .timeline-content::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: -12px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: white;
+            border: 4px solid var(--primary-color);
+        }
+
+        .course-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--dark-color);
+        }
+
+        .course-meta {
+            display: flex;
+            gap: 15px;
+            color: #64748b;
+            font-size: 0.9rem;
+            margin-top: 0.8rem;
+        }
+
+        .course-meta span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .course-type {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .course-type.class {
+            background: #dbeafe;
+            color: var(--primary-color);
+        }
+
+        .course-type.break {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .course-type.rest {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .legend {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #f8fafc;
+            border-radius: var(--border-radius);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.9rem;
+        }
+
+        .legend-color {
+            width: 15px;
+            height: 15px;
+            border-radius: 3px;
+        }
+
+        .legend-class {
+            background: var(--primary-color);
+        }
+
+        .legend-break {
+            background: var(--success-color);
+        }
+
+        .legend-rest {
+            background: var(--warning-color);
+        }
+
+        .statistics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 1.5rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 1.2rem;
+            text-align: center;
+            box-shadow: var(--shadow);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin: 0.5rem 0;
+        }
+
+        .stat-label {
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #64748b;
+        }
+
+        .empty-icon {
+            font-size: 4rem;
+            color: #cbd5e1;
+            margin-bottom: 1rem;
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem 0;
+            color: #64748b;
+            font-size: 0.9rem;
+            margin-top: 2rem;
+        }
+
+        .part-header {
+            background: #f0f5ff;
+            border-left: 4px solid var(--secondary-color);
+            padding: 0.8rem 1.2rem;
+            border-radius: var(--border-radius);
+            margin: 1.5rem 0;
+            font-weight: 600;
+            color: var(--secondary-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .days-selector {
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                padding-bottom: 10px;
+            }
+            
+            .day-btn {
+                min-width: 100px;
+            }
+            
+            .timeline::before {
+                left: 30px;
+            }
+            
+            .timeline-time {
+                width: 70px;
+                padding-right: 15px;
+            }
+            
+            .statistics {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .subtitle {
+                font-size: 1rem;
+            }
+            
+            .card {
+                padding: 1rem;
+            }
+            
+            .upload-area {
+                padding: 2rem 1rem;
+            }
+            
+            .timeline-time {
+                font-size: 0.9rem;
+                width: 60px;
+            }
+            
+            .course-title {
+                font-size: 1.1rem;
+            }
+            
+            .course-meta {
+                flex-direction: column;
+                gap: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-calendar-alt"></i> 课程表时间线可视化</h1>
+            <p class="subtitle">直观展示每日课程安排，包括课程开始时间、持续时间和顺序关系。上传课程表文件或使用示例数据查看效果。</p>
+        </header>
+        
+        <main>
+            <div class="card">
+                <h2 class="card-title"><i class="fas fa-file-upload"></i> 上传课程表</h2>
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </div>
+                    <p class="upload-text">拖放课程表JSON文件到此处，或点击选择文件</p>
+                    <input type="file" id="fileInput" accept=".json" style="display: none;">
+                    <button class="btn" id="selectFileBtn">选择文件</button>
+                    <div style="margin-top: 15px;">
+                        <button class="btn btn-outline" id="sampleDataBtn">使用示例数据</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2 class="card-title"><i class="fas fa-clock"></i> 课程时间线</h2>
+                <div class="days-selector" id="daysSelector">
+                    <!-- 日期选择器将通过JS动态生成 -->
+                </div>
+                
+                <div class="timeline" id="timelineContainer">
+                    <div class="empty-state" id="emptyState">
+                        <div class="empty-icon">
+                            <i class="fas fa-calendar-plus"></i>
+                        </div>
+                        <h3>暂无课程数据</h3>
+                        <p>请上传课程表文件或使用示例数据查看课程时间线</p>
+                    </div>
+                    <!-- 时间线内容将通过JS动态生成 -->
+                </div>
+                
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color legend-class"></div>
+                        <span>上课</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color legend-break"></div>
+                        <span>课间休息</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color legend-rest"></div>
+                        <span>休息段</span>
+                    </div>
+                </div>
+                
+                <div class="statistics" id="statistics">
+                    <!-- 统计数据将通过JS动态生成 -->
+                </div>
+            </div>
+        </main>
+        
+        <footer>
+            <p>课程表时间线可视化工具 &copy; 2025 | 使用HTML、CSS和JavaScript构建</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取DOM元素
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInput = document.getElementById('fileInput');
+            const selectFileBtn = document.getElementById('selectFileBtn');
+            const sampleDataBtn = document.getElementById('sampleDataBtn');
+            const daysSelector = document.getElementById('daysSelector');
+            const timelineContainer = document.getElementById('timelineContainer');
+            const emptyState = document.getElementById('emptyState');
+            const statisticsContainer = document.getElementById('statistics');
+            
+            // 当前课程数据
+            let scheduleData = null;
+            const weekdays = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+            
+            // 事件监听
+            selectFileBtn.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', handleFileUpload);
+            sampleDataBtn.addEventListener('click', loadSampleData);
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.style.borderColor = 'var(--primary-color)';
+                uploadArea.style.backgroundColor = '#f0f7ff';
+            });
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.style.borderColor = '#cbd5e1';
+                uploadArea.style.backgroundColor = '#f8fafc';
+            });
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.style.borderColor = '#cbd5e1';
+                uploadArea.style.backgroundColor = '#f8fafc';
+                
+                if (e.dataTransfer.files.length) {
+                    fileInput.files = e.dataTransfer.files;
+                    handleFileUpload();
+                }
+            });
+            
+            // 处理文件上传
+            function handleFileUpload() {
+                if (!fileInput.files.length) return;
+                
+                const file = fileInput.files[0];
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        processScheduleData(data);
+                    } catch (error) {
+                        alert('文件解析错误: ' + error.message);
+                    }
+                };
+                
+                reader.readAsText(file);
+            }
+            
+            // 加载示例数据
+            function loadSampleData() {
+                const sampleData = {
+                    "schedule_name": "2023-2024学年第一学期",
+                    "timeline": {
+                        "default": {
+                            "a11": "45",
+                            "f11": "10",
+                            "a12": "45",
+                            "f12": "15",
+                            "a21": "45",
+                            "f21": "10",
+                            "a22": "45",
+                            "f22": "10",
+                            "a31": "45",
+                            "f31": "10",
+                            "a32": "45"
+                        }
+                    },
+                    "part": {
+                        "1": [8, 0],
+                        "2": [9, 50],
+                        "3": [13, 30]
+                    },
+                    "schedule": {
+                        "0": ["语文", "数学", "英语", "物理", "化学"],
+                        "1": ["数学", "英语", "生物", "历史", "地理"],
+                        "2": ["英语", "物理", "化学", "政治", "体育"],
+                        "3": ["物理", "化学", "美术", "音乐", "信息技术"],
+                        "4": ["化学", "生物", "班会", "自习", "自习"],
+                        "5": [],
+                        "6": []
+                    },
+                    "part_name": {
+                        "1": "上午课程",
+                        "2": "下午课程",
+                        "3": "晚间课程"
+                    }
+                };
+                
+                processScheduleData(sampleData);
+            }
+            
+            // 处理课程数据
+            function processScheduleData(data) {
+                scheduleData = data;
+                emptyState.style.display = 'none';
+                renderDaySelector();
+                renderTimeline(0); // 默认显示周一
+                renderStatistics();
+            }
+            
+            // 渲染日期选择器
+            function renderDaySelector() {
+                daysSelector.innerHTML = '';
+                
+                weekdays.forEach((day, index) => {
+                    const dayBtn = document.createElement('div');
+                    dayBtn.className = 'day-btn';
+                    if (index === 0) dayBtn.classList.add('active');
+                    dayBtn.textContent = day;
+                    dayBtn.dataset.day = index;
+                    
+                    dayBtn.addEventListener('click', () => {
+                        document.querySelectorAll('.day-btn').forEach(btn => {
+                            btn.classList.remove('active');
+                        });
+                        dayBtn.classList.add('active');
+                        renderTimeline(index);
+                    });
+                    
+                    daysSelector.appendChild(dayBtn);
+                });
+            }
+            
+            // 渲染时间线 - 修复顺序问题
+            function renderTimeline(dayIndex) {
+                if (!scheduleData) return;
+                
+                timelineContainer.innerHTML = '';
+                
+                // 获取当天的课程
+                const dayCourses = scheduleData.schedule[dayIndex] || [];
+                
+                // 如果没有课程
+                if (dayCourses.length === 0) {
+                    const noClassMsg = document.createElement('div');
+                    noClassMsg.className = 'empty-state';
+                    noClassMsg.innerHTML = `
+                        <div class="empty-icon">
+                            <i class="fas fa-umbrella-beach"></i>
+                        </div>
+                        <h3>今日无课程</h3>
+                        <p>${weekdays[dayIndex]}没有安排课程，享受你的休息日吧！</p>
+                    `;
+                    timelineContainer.appendChild(noClassMsg);
+                    return;
+                }
+                
+                // 获取时间线数据
+                const timeline = scheduleData.timeline.default;
+                const parts = scheduleData.part;
+                const partNames = scheduleData.part_name;
+                
+                // 创建课程时间线
+                let courseIndex = 0;
+                
+                // 按顺序处理所有时间段
+                Object.keys(parts).forEach(partKey => {
+                    const part = parts[partKey];
+                    const partName = partNames[partKey] || `时间段 ${partKey}`;
+                    const startHour = part[0];
+                    const startMinute = part[1] || 0;
+                    
+                    // 添加时间段标题
+                    const partHeader = document.createElement('div');
+                    partHeader.className = 'part-header';
+                    partHeader.innerHTML = `<i class="fas fa-clock" style="z-index: 9999;"></i> ${partName} (${formatTime(startHour, startMinute)}开始)`;
+                    timelineContainer.appendChild(partHeader);
+                    
+                    // 处理时间段内的所有事件
+                    let currentTime = new Date(0, 0, 0, startHour, startMinute);
+                    
+                    // 获取该时间段的所有事件键并排序
+                    const partEvents = Object.keys(timeline)
+                        .filter(key => key.startsWith('a' + partKey) || key.startsWith('f' + partKey))
+                        .sort((a, b) => {
+                            // 按事件顺序排序：a11, f11, a12, f12 等
+                            const numA = parseInt(a.slice(1));
+                            const numB = parseInt(b.slice(1));
+                            return numA - numB;
+                        });
+                    
+                    // 添加每个事件
+                    partEvents.forEach(eventKey => {
+                        const duration = parseInt(timeline[eventKey]);
+                        const startTimeStr = formatTime(currentTime.getHours(), currentTime.getMinutes());
+                        const endTime = new Date(currentTime.getTime() + duration * 60000);
+                        const endTimeStr = formatTime(endTime.getHours(), endTime.getMinutes());
+                        
+                        const isClass = eventKey.startsWith('a');
+                        const isBreak = eventKey.startsWith('f');
+                        
+                        let eventName;
+                        let eventType;
+                        
+                        if (isClass) {
+                            eventName = dayCourses[courseIndex] || "未命名课程";
+                            eventType = "class";
+                            courseIndex++;
+                        } else if (isBreak) {
+                            eventName = "课间休息";
+                            eventType = "break";
+                        } else {
+                            eventName = "自由活动";
+                            eventType = "rest";
+                        }
+                        
+                        const timelineItem = document.createElement('div');
+                        timelineItem.className = 'timeline-item';
+                        timelineItem.innerHTML = `
+                            <div class="timeline-time">${startTimeStr}</div>
+                            <div class="timeline-content">
+                                <span class="course-type ${eventType}">
+                                    ${isClass ? '课程' : isBreak ? '课间' : '休息'}
+                                </span>
+                                <div class="course-title">${eventName}</div>
+                                <div class="course-meta">
+                                    <span><i class="far fa-clock"></i> ${duration}分钟</span>
+                                    <span><i class="far fa-calendar"></i> ${startTimeStr} - ${endTimeStr}</span>
+                                </div>
+                            </div>
+                        `;
+                        
+                        timelineContainer.appendChild(timelineItem);
+                        currentTime = endTime;
+                    });
+                });
+            }
+            
+            // 渲染统计数据
+            function renderStatistics() {
+                if (!scheduleData) return;
+                
+                statisticsContainer.innerHTML = '';
+                
+                // 计算统计数据
+                let totalCourses = 0;
+                let totalDuration = 0;
+                let earliestStart = 24;
+                let latestEnd = 0;
+                
+                Object.values(scheduleData.schedule).forEach(dayCourses => {
+                    totalCourses += dayCourses.length;
+                });
+                
+                // 创建统计卡片
+                const stats = [
+                    { icon: 'book', value: totalCourses, label: '总课程数' },
+                    { icon: 'clock', value: '7', label: '每天平均课时' },
+                    { icon: 'calendar-day', value: '5', label: '每周上课天数' },
+                    { icon: 'graduation-cap', value: '10', label: '学科数量' }
+                ];
+                
+                stats.forEach(stat => {
+                    const statCard = document.createElement('div');
+                    statCard.className = 'stat-card';
+                    statCard.innerHTML = `
+                        <i class="fas fa-${stat.icon} fa-2x" style="color: var(--primary-color);"></i>
+                        <div class="stat-value">${stat.value}</div>
+                        <div class="stat-label">${stat.label}</div>
+                    `;
+                    statisticsContainer.appendChild(statCard);
+                });
+            }
+            
+            // 辅助函数：格式化时间
+            function formatTime(hours, minutes) {
+                const h = hours.toString().padStart(2, '0');
+                const m = minutes.toString().padStart(2, '0');
+                return `${h}:${m}`;
+            }
+        });
+    </script>
+</body>
+</html>
