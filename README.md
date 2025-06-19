@@ -105,7 +105,7 @@ A: 请在 [Class Widgets](https://github.com/Class-Widgets/Class-Widgets) 中导
 
 ## License | 许可证
 
-GPTV3
+GPLV3
 
 ---
 
